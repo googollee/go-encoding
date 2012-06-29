@@ -1,4 +1,4 @@
-package goqp
+package qp
 
 import (
 	"testing"

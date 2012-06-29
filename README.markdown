@@ -12,7 +12,7 @@ Usage
 	package main
 
 	import "fmt"
-	import "goqp"
+	import "github.com/googollee/qp.go"
 
 	func main() {
 		str := "If you believe that truth=3Dbeauty, then surely =\nmathematics is the most beautiful branch of philosophy."
