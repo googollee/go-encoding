@@ -33,7 +33,7 @@ type decoder struct {
 	temp byte
 }
 
-func NewDecoder(r io.Reader) io.Reader {
+func NewQuotedPrintableDecoder(r io.Reader) io.Reader {
 	return &decoder{
 		r: r,
 		status: decodeNormal,

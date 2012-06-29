@@ -40,7 +40,7 @@ func TestQuotedPrintableDecode(t *testing.T) {
 	{
 		str := "If you believe that truth=3Dbeauty, then surely =\nmathematics is the most beautiful branch of philosophy."
 		expect := "If you believe that truth=beauty, then surely mathematics is the most beautiful branch of philosophy."
-		reader := NewDecoder(bytes.NewBufferString(str))
+		reader := NewQuotedPrintableDecoder(bytes.NewBufferString(str))
 		got, _ := ioutil.ReadAll(reader)
 		if string(got) != expect {
 			t.Errorf("Decode\n\texpect: %s\n\t   got: %s", expect, string(got))
@@ -50,7 +50,7 @@ func TestQuotedPrintableDecode(t *testing.T) {
 	{
 		str := "If you believe that truth=3Dbeauty, then surely =\r\nmathematics is the most beautiful branch of philosophy."
 		expect := "If you believe that truth=beauty, then surely mathematics is the most beautiful branch of philosophy."
-		reader := NewDecoder(bytes.NewBufferString(str))
+		reader := NewQuotedPrintableDecoder(bytes.NewBufferString(str))
 		got, err := ioutil.ReadAll(reader)
 		t.Log(err)
 		if string(got) != expect {
