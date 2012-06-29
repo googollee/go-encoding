@@ -23,6 +23,7 @@ type decodeStatus int
 const (
 	decodeQuoted decodeStatus = iota
 	decodeFirst
+	decodeReturn
 	decodeNormal
 )
 
@@ -57,21 +58,31 @@ func (d *decoder) Read(p []byte) (n int, err error) {
 				n++
 			}
 		case decodeQuoted:
-			if b == byte('\n') {
+			switch b {
+			case byte('\n'): 
 				d.status = decodeNormal
-			} else {
+			case byte('\r'):
+				d.status = decodeReturn
+			default:
 				h, ok := UnHex(b)
 				if !ok {
-					err = fmt.Errorf("can't convert %c to hex", rune(b))
+					err = fmt.Errorf("can't convert %c(%d) to hex", rune(b), b)
 					return
 				}
 				d.temp = h * 16
 				d.status = decodeFirst
 			}
+		case decodeReturn:
+			if b == byte('\n') {
+				d.status = decodeNormal
+			} else {
+				p[n] = d.temp
+				n++
+			}
 		case decodeFirst:
 			h, ok := UnHex(b)
 			if !ok {
-				err = fmt.Errorf("can't convert %c to hex", rune(b))
+				err = fmt.Errorf("can't convert %c(%d) to hex", rune(b), b)
 				return
 			}
 			d.temp += h
