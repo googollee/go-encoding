@@ -73,12 +73,11 @@ func (d *decoder) Read(p []byte) (n int, err error) {
 				d.status = decodeFirst
 			}
 		case decodeReturn:
-			if b == byte('\n') {
-				d.status = decodeNormal
-			} else {
+			if b != byte('\n') {
 				p[n] = d.temp
 				n++
 			}
+			d.status = decodeNormal
 		case decodeFirst:
 			h, ok := UnHex(b)
 			if !ok {
