@@ -34,3 +34,31 @@ func (r *ignoreReader) Read(p []byte) (n int, err error) {
 	return
 }
 
+type ignoreWriter struct {
+	w io.Writer
+	byteMap map[byte]bool
+}
+
+func NewIgnoreWriter(w io.Writer, ignoreBytes []byte) io.Writer {
+	byteMap := make(map[byte]bool)
+	for _, b := range ignoreBytes {
+		byteMap[b] = true
+	}
+	return &ignoreWriter{w, byteMap}
+}
+
+func (w *ignoreWriter) Write(p []byte) (n int, err error) {
+	buf := make([]byte, len(p), cap(p))
+	i := 0
+	for _, b := range p {
+		if _, ok := w.byteMap[b]; !ok {
+			buf[i] = b
+			i++
+		}
+	}
+	n, err = w.w.Write(buf[:i])
+	if err == nil {
+		n = len(p)
+	}
+	return
+}
