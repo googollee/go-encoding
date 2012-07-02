@@ -34,30 +34,30 @@ func hex(p byte) (ret [2]byte) {
 	return
 }
 
-type decodeStatus int
+type qpDecodeStatus int
 
 const (
-	decodeQuoted decodeStatus = iota
-	decodeFirst
-	decodeReturn
-	decodeNormal
+	qpDecodeQuoted qpDecodeStatus = iota
+	qpDecodeFirst
+	qpDecodeReturn
+	qpDecodeNormal
 )
 
-type decoder struct {
+type qpDecoder struct {
 	r      io.Reader
-	status decodeStatus
+	status qpDecodeStatus
 	temp   byte
 }
 
 func NewQuotedPrintableDecoder(r io.Reader) io.Reader {
-	return &decoder{
+	return &qpDecoder{
 		r:      r,
-		status: decodeNormal,
+		status: qpDecodeNormal,
 		temp:   0,
 	}
 }
 
-func (d *decoder) Read(p []byte) (n int, err error) {
+func (d *qpDecoder) Read(p []byte) (n int, err error) {
 	readed := make([]byte, len(p), cap(p))
 	readedn, err := d.r.Read(readed)
 	if err != nil {
@@ -66,19 +66,19 @@ func (d *decoder) Read(p []byte) (n int, err error) {
 	n = 0
 	for _, b := range readed[:readedn] {
 		switch d.status {
-		case decodeNormal:
+		case qpDecodeNormal:
 			if b == byte('=') {
-				d.status = decodeQuoted
+				d.status = qpDecodeQuoted
 			} else {
 				p[n] = b
 				n++
 			}
-		case decodeQuoted:
+		case qpDecodeQuoted:
 			switch b {
 			case byte('\n'):
-				d.status = decodeNormal
+				d.status = qpDecodeNormal
 			case byte('\r'):
-				d.status = decodeReturn
+				d.status = qpDecodeReturn
 			default:
 				h, ok := unHex(b)
 				if !ok {
@@ -86,15 +86,15 @@ func (d *decoder) Read(p []byte) (n int, err error) {
 					return
 				}
 				d.temp = h * 16
-				d.status = decodeFirst
+				d.status = qpDecodeFirst
 			}
-		case decodeReturn:
+		case qpDecodeReturn:
 			if b != byte('\n') {
 				p[n] = d.temp
 				n++
 			}
-			d.status = decodeNormal
-		case decodeFirst:
+			d.status = qpDecodeNormal
+		case qpDecodeFirst:
 			h, ok := unHex(b)
 			if !ok {
 				err = fmt.Errorf("can't convert %c(%d) to hex", rune(b), b)
@@ -103,26 +103,26 @@ func (d *decoder) Read(p []byte) (n int, err error) {
 			d.temp += h
 			p[n] = d.temp
 			n++
-			d.status = decodeNormal
+			d.status = qpDecodeNormal
 		}
 	}
 	return
 }
 
-type encodeStatus int
+type qpEncodeStatus int
 
 const (
-	encodeNormal encodeStatus = iota
-	encodeSpace
-	encodeSpaceReturn
-	encodeReturn
+	qpEncodeNormal qpEncodeStatus = iota
+	qpEncodeSpace
+	qpEncodeSpaceReturn
+	qpEncodeReturn
 )
 
 const maxBuf = 1024
 
-type encoder struct {
+type qpEncoder struct {
 	w             io.Writer
-	status        encodeStatus
+	status        qpEncodeStatus
 	maxLineLength int
 	lineLength    int
 	nbuf          int
@@ -137,29 +137,29 @@ func NewQuotedPrintableEncoder(w io.Writer, maxLength int) io.WriteCloser {
 	if maxLength > 76 {
 		maxLength = 76
 	}
-	return &encoder{
+	return &qpEncoder{
 		w:             w,
-		status:        encodeNormal,
+		status:        qpEncodeNormal,
 		maxLineLength: maxLength,
 		lineLength:    0,
 		nbuf:          0,
 	}
 }
 
-func (e *encoder) Write(p []byte) (n int, err error) {
+func (e *qpEncoder) Write(p []byte) (n int, err error) {
 	e.nbuf = 0
 	var b byte
 	for n, b = range p {
 		switch e.status {
-		case encodeNormal:
+		case qpEncodeNormal:
 			switch b {
 			case byte(' '):
 				fallthrough
 			case byte('\t'):
-				e.status = encodeSpace
+				e.status = qpEncodeSpace
 				e.last = b
 			case byte('\r'):
-				e.status = encodeReturn
+				e.status = qpEncodeReturn
 			case byte('\n'):
 				if err = e.push(byte('\r')); err != nil {
 					return
@@ -176,12 +176,12 @@ func (e *encoder) Write(p []byte) (n int, err error) {
 					return
 				}
 			}
-		case encodeSpace:
+		case qpEncodeSpace:
 			switch b {
 			case byte('\r'):
-				e.status = encodeSpaceReturn
+				e.status = qpEncodeSpaceReturn
 			case byte('\n'):
-				e.status = encodeNormal
+				e.status = qpEncodeNormal
 				if err = e.pushQuoted(e.last); err != nil {
 					return
 				}
@@ -192,7 +192,7 @@ func (e *encoder) Write(p []byte) (n int, err error) {
 					return
 				}
 			default:
-				e.status = encodeNormal
+				e.status = qpEncodeNormal
 				if err = e.push(e.last); err != nil {
 					return
 				}
@@ -200,7 +200,7 @@ func (e *encoder) Write(p []byte) (n int, err error) {
 					return
 				}
 			}
-		case encodeSpaceReturn:
+		case qpEncodeSpaceReturn:
 			if b == byte('\n') {
 				if err = e.pushQuoted(e.last); err != nil {
 					return
@@ -222,7 +222,7 @@ func (e *encoder) Write(p []byte) (n int, err error) {
 					return
 				}
 			}
-		case encodeReturn:
+		case qpEncodeReturn:
 			if b == byte('\n') {
 				if err = e.push(byte('\r')); err != nil {
 					return
@@ -244,18 +244,18 @@ func (e *encoder) Write(p []byte) (n int, err error) {
 	return
 }
 
-func (e *encoder) Close() error {
+func (e *qpEncoder) Close() error {
 	return nil
 }
 
-func (e *encoder) pushCheck(p byte) error {
+func (e *qpEncoder) pushCheck(p byte) error {
 	if 33 <= p && p <= 126 {
 		return e.push(p)
 	}
 	return e.pushQuoted(p)
 }
 
-func (e *encoder) push(p byte) error {
+func (e *qpEncoder) push(p byte) error {
 	if p != byte('\r') && p != byte('\n') {
 		if (e.lineLength + 1) >= e.maxLineLength {
 			e.buf[e.nbuf] = byte('=')
@@ -275,7 +275,7 @@ func (e *encoder) push(p byte) error {
 	return e.checkAndSendBuffer()
 }
 
-func (e *encoder) pushQuoted(p byte) error {
+func (e *qpEncoder) pushQuoted(p byte) error {
 	if (e.lineLength + 3) >= e.maxLineLength {
 		e.push(byte('='))
 		e.push(byte('\r'))
@@ -292,7 +292,7 @@ func (e *encoder) pushQuoted(p byte) error {
 	return nil
 }
 
-func (e *encoder) checkAndSendBuffer() error {
+func (e *qpEncoder) checkAndSendBuffer() error {
 	if e.nbuf >= maxBuf {
 		_, err := e.w.Write(e.buf[:])
 		if err != nil {
