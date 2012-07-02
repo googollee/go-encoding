@@ -27,8 +27,8 @@ func DecodeEncodedWord(str string) (ret, charset string, err error) {
 	if err != nil {
 		return
 	}
-	charset = splits[1]
-	codec := splits[2]
+	charset = strings.ToUpper(splits[1])
+	codec := strings.ToUpper(splits[2])
 	buf := bytes.NewBufferString(splits[3])
 	var reader io.Reader
 	switch codec {
@@ -59,8 +59,8 @@ func DecodeEncodedWordArray(strs []string) (ret, charset string, err error) {
 		err = fmt.Errorf("%s: line 0", err)
 		return
 	}
-	charset = splits[1]
-	codec := splits[2]
+	charset = strings.ToUpper(splits[1])
+	codec := strings.ToUpper(splits[2])
 	bufs := make([]io.Reader, len(strs), len(strs))
 	for i, s := range strs {
 		var splits []string
