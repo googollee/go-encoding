@@ -108,7 +108,7 @@ func TestIconvReadCloser(t *testing.T) {
 		t.Errorf("expect err nil, got: %s", err)
 	}
 	defer from.Close()
-	to, err := NewIconvReadCloser(from, "utf-8", "gbk")
+	to, err := NewIconvReadCloserBufferSize(from, 233, "utf-8", "gbk")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
