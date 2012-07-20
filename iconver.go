@@ -1,7 +1,6 @@
 package encodingex
 
 import (
-	"fmt"
 	"io"
 )
 
@@ -51,7 +50,7 @@ func (i *IconvReadCloser) Read(p []byte) (int, error) {
 	for j := 0; j < m; j++ {
 		p[j] = i.outBuf[j]
 	}
-	i.moveOutBuffer(m)
+	i.arrangeOutBuffer(m)
 	return m, nil
 }
 
@@ -66,36 +65,35 @@ func (i *IconvReadCloser) fillBuffer() error {
 		}
 		i.inEnd += n
 	}
-	inbuf := i.inBuf[:i.inEnd]
-	outbuf := i.outBuf[i.outEnd:]
+	inbuf, outbuf := i.inBuf[:i.inEnd], i.outBuf[i.outEnd:]
 	inlen, outlen, err := i.iconv.Conv(inbuf, outbuf)
-	i.moveOrgBuffer(inlen)
+	i.arrangeInBuffer(inlen)
 	i.outEnd += outlen
 	return err
 }
 
-func (i *IconvReadCloser) moveOutBuffer(end int) {
-	if end == 0 {
+func (i *IconvReadCloser) arrangeOutBuffer(index int) {
+	if index == 0 {
 		return
 	}
-	t := 0
-	for f := end; f < i.outEnd; f++ {
-		i.outBuf[t] = i.outBuf[f]
-		t++
+	end := i.outEnd
+	i.outEnd = 0
+	for ; index < end; index++ {
+		i.outBuf[i.outEnd] = i.outBuf[index]
+		i.outEnd++
 	}
-	i.outEnd = t
 }
 
-func (i *IconvReadCloser) moveOrgBuffer(end int) {
-	if end == 0 {
+func (i *IconvReadCloser) arrangeInBuffer(index int) {
+	if index == 0 {
 		return
 	}
-	t := 0
-	for f := end; f < i.inEnd; f++ {
-		i.inBuf[t] = i.inBuf[f]
-		t++
+	end := i.inEnd
+	i.inEnd = 0
+	for ; index < end; index++ {
+		i.inBuf[i.inEnd] = i.inBuf[index]
+		i.inEnd++
 	}
-	i.inEnd = t
 }
 
 type IconvWriteCloser struct {
@@ -125,27 +123,25 @@ func (i *IconvWriteCloser) Close() error {
 }
 
 func (i *IconvWriteCloser) Write(p []byte) (int, error) {
-	for l, mp := 0, len(p); l < mp; {
-		in := p[l:]
-		out := i.outBuf[:]
+	for index := 0; index < len(p); {
+		in, out := p[index:], i.outBuf[:]
 		inlen, outlen, err := i.iconv.Conv(in, out)
 		if err != nil && outlen == 0 {
-			if l == 0 {
-				fmt.Println("err with 0")
-				return l, err
+			if index == 0 {
+				return index, err
 			} else {
-				return l, nil
+				return index, nil
 			}
 		}
-		out = i.outBuf[:outlen]
-		for len(out) > 0 {
+
+		for out := i.outBuf[:outlen]; len(out) > 0; {
 			n, err := i.w.Write(out)
 			if err != nil {
-				return l, err
+				return index, err
 			}
 			out = out[n:]
 		}
-		l += inlen
+		index += inlen
 	}
 	return len(p), nil
 }
