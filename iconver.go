@@ -1,31 +1,77 @@
 package encodingex
 
 import (
+	"fmt"
 	"io"
 )
 
-type iconver struct {
-	iconv  Iconv
-	maxBuf int
-	inBuf  []byte
-	inEnd  int
-	outBuf []byte
-	outEnd int
+type IconvReadCloser struct {
+	iconv   Iconv
+	r       io.Reader
+	bufSize int
+	inBuf   []byte
+	inEnd   int
+	outBuf  []byte
+	outEnd  int
 }
 
-func newIconver(maxBuf int, tocode, fromcode string) (i iconver, err error) {
-	iconv, e := NewIconv(tocode, fromcode)
-	if e != nil {
-		err = e
-		return
+func NewIconvReadCloser(r io.Reader, tocode, fromcode string) (*IconvReadCloser, error) {
+	return NewIconvReadCloserBufferSize(r, 1024, tocode, fromcode)
+}
+
+func NewIconvReadCloserBufferSize(r io.Reader, bufSize int, tocode, fromcode string) (*IconvReadCloser, error) {
+	iconv, err := NewIconv(tocode, fromcode)
+	if err != nil {
+		return nil, err
 	}
-	i.iconv = iconv
-	i.maxBuf = maxBuf
-	i.inBuf = make([]byte, maxBuf, maxBuf)
-	i.inEnd = 0
-	i.outBuf = make([]byte, maxBuf, maxBuf)
-	i.outEnd = 0
-	return
+	return &IconvReadCloser{
+		iconv:   iconv,
+		r:       r,
+		bufSize: bufSize,
+		inBuf:   make([]byte, bufSize, bufSize),
+		inEnd:   0,
+		outBuf:  make([]byte, bufSize, bufSize),
+		outEnd:  0,
+	}, nil
+}
+
+func (i *IconvReadCloser) Close() error {
+	return i.iconv.Close()
+}
+
+func (i *IconvReadCloser) Read(p []byte) (int, error) {
+	err := i.fillBuffer()
+	if i.outEnd == 0 {
+		return 0, err
+	}
+	m := len(p)
+	if m > i.outEnd {
+		m = i.outEnd
+	}
+	for j := 0; j < m; j++ {
+		p[j] = i.outBuf[j]
+	}
+	i.moveOutBuffer(m)
+	return m, nil
+}
+
+func (i *IconvReadCloser) fillBuffer() error {
+	if i.outEnd == i.bufSize {
+		return nil
+	}
+	if i.inEnd < i.bufSize {
+		n, err := i.r.Read(i.inBuf[i.inEnd:])
+		if err != nil && i.inEnd == 0 {
+			return err
+		}
+		i.inEnd += n
+	}
+	inbuf := i.inBuf[:i.inEnd]
+	outbuf := i.outBuf[i.outEnd:]
+	inlen, outlen, err := i.iconv.Conv(inbuf, outbuf)
+	i.moveOrgBuffer(inlen)
+	i.outEnd += outlen
+	return err
 }
 
 func (i *IconvReadCloser) moveOutBuffer(end int) {
@@ -52,83 +98,54 @@ func (i *IconvReadCloser) moveOrgBuffer(end int) {
 	i.inEnd = t
 }
 
-type IconvReadCloser struct {
-	iconver
-	r io.Reader
-}
-
-func NewIconvReadCloser(r io.Reader, tocode, fromcode string) (*IconvReadCloser, error) {
-	return NewIconvReadCloserBufferSize(r, maxBuf, tocode, fromcode)
-}
-
-func NewIconvReadCloserBufferSize(r io.Reader, maxBuf int, tocode, fromcode string) (*IconvReadCloser, error) {
-	iconver, err := newIconver(maxBuf, tocode, fromcode)
-	if err != nil {
-		return nil, err
-	}
-	return &IconvReadCloser{iconver, r}, nil
-}
-
-func (i *IconvReadCloser) Close() error {
-	return i.iconv.Close()
-}
-
-func (i *IconvReadCloser) Read(p []byte) (int, error) {
-	err := i.fillBuffer()
-	if i.outEnd == 0 {
-		return 0, err
-	}
-	m := len(p)
-	if m > i.outEnd {
-		m = i.outEnd
-	}
-	for j := 0; j < m; j++ {
-		p[j] = i.outBuf[j]
-	}
-	i.moveOutBuffer(m)
-	return m, nil
-}
-
-func (i *IconvReadCloser) fillBuffer() error {
-	if i.outEnd == i.maxBuf {
-		return nil
-	}
-	if i.inEnd < i.maxBuf {
-		n, err := i.r.Read(i.inBuf[i.inEnd:])
-		if err != nil && i.inEnd == 0 {
-			return err
-		}
-		i.inEnd += n
-	}
-	inbuf := i.inBuf[:i.inEnd]
-	outbuf := i.outBuf[i.outEnd:]
-	inlen, outlen, err := i.iconv.Conv(inbuf, outbuf)
-	i.moveOrgBuffer(inlen)
-	i.outEnd += outlen
-	return err
-}
-
 type IconvWriteCloser struct {
-	iconver
-	w io.WriteCloser
+	iconv  Iconv
+	w      io.Writer
+	outBuf []byte
 }
 
-func NewIconvWriteCloser(w io.WriteCloser, tocode, fromcode string) (*IconvWriteCloser, error) {
-	return NewIconvWriteCloserBufferSize(w, maxBuf, tocode, fromcode)
+func NewIconvWriteCloser(w io.Writer, tocode, fromcode string) (*IconvWriteCloser, error) {
+	return NewIconvWriteCloserBufferSize(w, 1024, tocode, fromcode)
 }
 
-func NewIconvWriteCloserBufferSize(w io.WriteCloser, maxBuf int, tocode, fromcode string) (*IconvWriteCloser, error) {
-	iconver, err := newIconver(maxBuf, tocode, fromcode)
+func NewIconvWriteCloserBufferSize(w io.Writer, bufSize int, tocode, fromcode string) (*IconvWriteCloser, error) {
+	iconv, err := NewIconv(tocode, fromcode)
 	if err != nil {
 		return nil, err
 	}
-	return &IconvWriteCloser{iconver, w}, nil
+	return &IconvWriteCloser{
+		iconv:  iconv,
+		w:      w,
+		outBuf: make([]byte, bufSize, bufSize),
+	}, nil
 }
 
 func (i *IconvWriteCloser) Close() error {
-	err := i.w.Close()
-	if err != nil {
-		return err
-	}
 	return i.iconv.Close()
+}
+
+func (i *IconvWriteCloser) Write(p []byte) (int, error) {
+	for l, mp := 0, len(p); l < mp; {
+		in := p[l:]
+		out := i.outBuf[:]
+		inlen, outlen, err := i.iconv.Conv(in, out)
+		if err != nil && outlen == 0 {
+			if l == 0 {
+				fmt.Println("err with 0")
+				return l, err
+			} else {
+				return l, nil
+			}
+		}
+		out = i.outBuf[:outlen]
+		for len(out) > 0 {
+			n, err := i.w.Write(out)
+			if err != nil {
+				return l, err
+			}
+			out = out[n:]
+		}
+		l += inlen
+	}
+	return len(p), nil
 }

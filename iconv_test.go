@@ -129,3 +129,33 @@ func TestIconvReadCloser(t *testing.T) {
 		fmt.Println("expect eof, got: %s", err)
 	}
 }
+
+func TestIconvWriteCloser(t *testing.T) {
+	str := ""
+	for i := 0; i < 200; i++ {
+		str = str + "你好世界"
+	}
+	buf := bytes.NewBuffer(nil)
+
+	from, err := NewIconvWriteCloser(buf, "gbk", "utf-8")
+	if err != nil {
+		t.Errorf("expect err nil, got: %s", err)
+	}
+	defer from.Close()
+	to, err := NewIconvWriteCloser(from, "utf-8", "gbk")
+	if err != nil {
+		t.Errorf("expect err nil, got: %s", err)
+	}
+	defer to.Close()
+
+	n, err := to.Write([]byte(str))
+	if err != nil {
+		t.Errorf("expect err nil, got: %s", err)
+	}
+	if expect, got := 2400, n; got != expect {
+		t.Errorf("expect: %d, got: %d", expect, got)
+	}
+	if expect, got := str, buf.String(); got != expect {
+		t.Errorf("expect: %s, got: %s", expect, got)
+	}
+}
