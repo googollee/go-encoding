@@ -8,16 +8,16 @@ import (
 	"unsafe"
 )
 
-type Iconv struct {
+type Iconver struct {
 	p C.iconv_t
 }
 
-func NewIconv(tocode, fromcode string) (i Iconv, err error) {
+func NewIconver(tocode, fromcode string) (i Iconver, err error) {
 	i.p, err = C.iconv_open(C.CString(tocode), C.CString(fromcode))
 	return
 }
 
-func (i Iconv) Conv(in, out []byte) (inlen int, outlen int, err error) {
+func (i Iconver) Conv(in, out []byte) (inlen int, outlen int, err error) {
 	insize, outsize := C.size_t(len(in)), C.size_t(len(out))
 	inptr, outptr := &in[0], &out[0]
 	_, err = C.iconv(i.p,
@@ -27,7 +27,7 @@ func (i Iconv) Conv(in, out []byte) (inlen int, outlen int, err error) {
 	return
 }
 
-func (i Iconv) Close() (err error) {
+func (i Iconver) Close() (err error) {
 	_, err = C.iconv_close(i.p)
 	return
 }

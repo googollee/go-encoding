@@ -1,11 +1,13 @@
 package encodingex
 
 import (
+	"bytes"
 	"io"
+	"io/ioutil"
 )
 
 type IconvReadCloser struct {
-	iconv   Iconv
+	iconver Iconver
 	r       io.Reader
 	bufSize int
 	inBuf   []byte
@@ -19,12 +21,12 @@ func NewIconvReadCloser(r io.Reader, tocode, fromcode string) (*IconvReadCloser,
 }
 
 func NewIconvReadCloserBufferSize(r io.Reader, bufSize int, tocode, fromcode string) (*IconvReadCloser, error) {
-	iconv, err := NewIconv(tocode, fromcode)
+	iconver, err := NewIconver(tocode, fromcode)
 	if err != nil {
 		return nil, err
 	}
 	return &IconvReadCloser{
-		iconv:   iconv,
+		iconver: iconver,
 		r:       r,
 		bufSize: bufSize,
 		inBuf:   make([]byte, bufSize, bufSize),
@@ -35,7 +37,7 @@ func NewIconvReadCloserBufferSize(r io.Reader, bufSize int, tocode, fromcode str
 }
 
 func (i *IconvReadCloser) Close() error {
-	return i.iconv.Close()
+	return i.iconver.Close()
 }
 
 func (i *IconvReadCloser) Read(p []byte) (int, error) {
@@ -66,7 +68,7 @@ func (i *IconvReadCloser) fillBuffer() error {
 		i.inEnd += n
 	}
 	inbuf, outbuf := i.inBuf[:i.inEnd], i.outBuf[i.outEnd:]
-	inlen, outlen, err := i.iconv.Conv(inbuf, outbuf)
+	inlen, outlen, err := i.iconver.Conv(inbuf, outbuf)
 	i.arrangeInBuffer(inlen)
 	i.outEnd += outlen
 	return err
@@ -97,9 +99,9 @@ func (i *IconvReadCloser) arrangeInBuffer(index int) {
 }
 
 type IconvWriteCloser struct {
-	iconv  Iconv
-	w      io.Writer
-	outBuf []byte
+	iconver Iconver
+	w       io.Writer
+	outBuf  []byte
 }
 
 func NewIconvWriteCloser(w io.Writer, tocode, fromcode string) (*IconvWriteCloser, error) {
@@ -107,25 +109,25 @@ func NewIconvWriteCloser(w io.Writer, tocode, fromcode string) (*IconvWriteClose
 }
 
 func NewIconvWriteCloserBufferSize(w io.Writer, bufSize int, tocode, fromcode string) (*IconvWriteCloser, error) {
-	iconv, err := NewIconv(tocode, fromcode)
+	iconver, err := NewIconver(tocode, fromcode)
 	if err != nil {
 		return nil, err
 	}
 	return &IconvWriteCloser{
-		iconv:  iconv,
-		w:      w,
-		outBuf: make([]byte, bufSize, bufSize),
+		iconver: iconver,
+		w:       w,
+		outBuf:  make([]byte, bufSize, bufSize),
 	}, nil
 }
 
 func (i *IconvWriteCloser) Close() error {
-	return i.iconv.Close()
+	return i.iconver.Close()
 }
 
 func (i *IconvWriteCloser) Write(p []byte) (int, error) {
 	for index := 0; index < len(p); {
 		in, out := p[index:], i.outBuf[:]
-		inlen, outlen, err := i.iconv.Conv(in, out)
+		inlen, outlen, err := i.iconver.Conv(in, out)
 		if err != nil && outlen == 0 {
 			if index == 0 {
 				return index, err
@@ -144,4 +146,20 @@ func (i *IconvWriteCloser) Write(p []byte) (int, error) {
 		index += inlen
 	}
 	return len(p), nil
+}
+
+func Iconv(str, tocode, fromcode string) (string, error) {
+	from := bytes.NewBufferString(str)
+
+	reader, err := NewIconvReadCloser(from, tocode, fromcode)
+	if err != nil {
+		return "", err
+	}
+
+	ret, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+
+	return string(ret), nil
 }

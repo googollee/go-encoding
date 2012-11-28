@@ -8,17 +8,17 @@ import (
 	"testing"
 )
 
-func TestIconv(t *testing.T) {
+func TestIconver(t *testing.T) {
 	str := "你好世界"
 	temp1 := make([]byte, 20, 20)
 	temp2 := make([]byte, 20, 20)
 
-	from, err := NewIconv("gbk", "utf-8")
+	from, err := NewIconver("gbk", "utf-8")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
 	defer from.Close()
-	to, err := NewIconv("utf-8", "gbk")
+	to, err := NewIconver("utf-8", "gbk")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
@@ -57,12 +57,12 @@ func TestIconvPart(t *testing.T) {
 	temp1 := make([]byte, 20, 20)
 	temp2 := make([]byte, 20, 20)
 
-	from, err := NewIconv("gbk", "utf-8")
+	from, err := NewIconver("gbk", "utf-8")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
 	defer from.Close()
-	to, err := NewIconv("utf-8", "gbk")
+	to, err := NewIconver("utf-8", "gbk")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
@@ -157,5 +157,24 @@ func TestIconvWriteCloser(t *testing.T) {
 	}
 	if expect, got := str, buf.String(); got != expect {
 		t.Errorf("expect: %s, got: %s", expect, got)
+	}
+}
+
+func TestIconv(t *testing.T) {
+	str := "你好世界"
+	to, err := Iconv(str, "gbk", "utf-8")
+	if err != nil {
+		t.Errorf("expect err nil, got: %s", err)
+	}
+	if str == to {
+		t.Errorf("expect: %s not same as %s", to, str)
+	}
+
+	from, err := Iconv(to, "utf-8", "gbk")
+	if err != nil {
+		t.Errorf("expect err nil, got: %s", err)
+	}
+	if str != from {
+		t.Errorf("expect: %s same as %s", from, str)
 	}
 }
