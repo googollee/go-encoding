@@ -13,12 +13,12 @@ func TestIconver(t *testing.T) {
 	temp1 := make([]byte, 20, 20)
 	temp2 := make([]byte, 20, 20)
 
-	from, err := NewIconver("gbk", "utf-8")
+	from, err := NewIconv("gbk", "utf-8")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
 	defer from.Close()
-	to, err := NewIconver("utf-8", "gbk")
+	to, err := NewIconv("utf-8", "gbk")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
@@ -57,12 +57,12 @@ func TestIconvPart(t *testing.T) {
 	temp1 := make([]byte, 20, 20)
 	temp2 := make([]byte, 20, 20)
 
-	from, err := NewIconver("gbk", "utf-8")
+	from, err := NewIconv("gbk", "utf-8")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
 	defer from.Close()
-	to, err := NewIconver("utf-8", "gbk")
+	to, err := NewIconv("utf-8", "gbk")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
@@ -162,7 +162,7 @@ func TestIconvWriteCloser(t *testing.T) {
 
 func TestIconv(t *testing.T) {
 	str := "你好世界"
-	to, err := Iconv(str, "gbk", "utf-8")
+	to, err := Conv(str, "gbk", "utf-8")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
@@ -170,7 +170,7 @@ func TestIconv(t *testing.T) {
 		t.Errorf("expect: %s not same as %s", to, str)
 	}
 
-	from, err := Iconv(to, "utf-8", "gbk")
+	from, err := Conv(to, "utf-8", "gbk")
 	if err != nil {
 		t.Errorf("expect err nil, got: %s", err)
 	}
