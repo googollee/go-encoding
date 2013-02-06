@@ -2,7 +2,7 @@ package encodingex
 
 // #cgo freebsd LDFLAGS: -L/usr/local/lib -liconv
 // #cgo freebsd CFLAGS: -I/usr/local/include
-// #cgo darwin LDFLAGS: -liconv
+// #cgo LDFLAGS: -liconv
 // #include <iconv.h>
 import "C"
 
