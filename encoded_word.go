@@ -1,13 +1,13 @@
 package encodingex
 
 import (
-	"io"
-	"io/ioutil"
-	"strings"
+	"bytes"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"bytes"
+	"io"
+	"io/ioutil"
+	"strings"
 )
 
 func splitString(str string) ([]string, error) {
@@ -21,13 +21,13 @@ func splitString(str string) ([]string, error) {
 	return splits, nil
 }
 
-func DecodeEncodedWord(str string) (ret, charset string, err error) {
+func DecodeEncodedWord(str string) (ret string, err error) {
 	var splits []string
 	splits, err = splitString(str)
 	if err != nil {
 		return
 	}
-	charset = strings.ToUpper(splits[1])
+	charset := strings.ToUpper(splits[1])
 	codec := strings.ToUpper(splits[2])
 	buf := bytes.NewBufferString(splits[3])
 	var reader io.Reader
@@ -46,10 +46,13 @@ func DecodeEncodedWord(str string) (ret, charset string, err error) {
 		return
 	}
 	ret = string(data)
+	if charset != "UTF-8" {
+		ret, err = Conv(ret, "UTF-8", charset)
+	}
 	return
 }
 
-func DecodeEncodedWordArray(strs []string) (ret, charset string, err error) {
+func DecodeEncodedWordArray(strs []string) (ret string, err error) {
 	if len(strs) == 0 {
 		return
 	}
@@ -59,7 +62,7 @@ func DecodeEncodedWordArray(strs []string) (ret, charset string, err error) {
 		err = fmt.Errorf("%s: line 0", err)
 		return
 	}
-	charset = strings.ToUpper(splits[1])
+	charset := strings.ToUpper(splits[1])
 	codec := strings.ToUpper(splits[2])
 	bufs := make([]io.Reader, len(strs), len(strs))
 	for i, s := range strs {
@@ -88,5 +91,8 @@ func DecodeEncodedWordArray(strs []string) (ret, charset string, err error) {
 		return
 	}
 	ret = string(data)
+	if charset != "UTF-8" {
+		ret, err = Conv(ret, "UTF-8", charset)
+	}
 	return
 }
