@@ -16,10 +16,12 @@ type IconvReadCloser struct {
 	outEnd  int
 }
 
+// Create a ReadCloser to convert Reader r from fromcode to tocode.
 func NewIconvReadCloser(r io.Reader, tocode, fromcode string) (*IconvReadCloser, error) {
 	return NewIconvReadCloserBufferSize(r, 1024, tocode, fromcode)
 }
 
+// Create a ReadCloser to convert Reader r from fromcode to tocode, with buffer size bufSize.
 func NewIconvReadCloserBufferSize(r io.Reader, bufSize int, tocode, fromcode string) (*IconvReadCloser, error) {
 	iconv, err := NewIconv(tocode, fromcode)
 	if err != nil {
@@ -36,10 +38,12 @@ func NewIconvReadCloserBufferSize(r io.Reader, bufSize int, tocode, fromcode str
 	}, nil
 }
 
+// Close IconvReaderCloser
 func (i *IconvReadCloser) Close() error {
 	return i.iconv.Close()
 }
 
+// Read to p.
 func (i *IconvReadCloser) Read(p []byte) (int, error) {
 	err := i.fillBuffer()
 	if i.outEnd == 0 {
@@ -104,10 +108,12 @@ type IconvWriteCloser struct {
 	outBuf []byte
 }
 
+// Create a WriteCloser to convert Writer w from fromcode to tocode, with buffer size bufSize.
 func NewIconvWriteCloser(w io.Writer, tocode, fromcode string) (*IconvWriteCloser, error) {
 	return NewIconvWriteCloserBufferSize(w, 1024, tocode, fromcode)
 }
 
+// Create a WriteCloser to convert Writer w from fromcode to tocode, with buffer size bufSize.
 func NewIconvWriteCloserBufferSize(w io.Writer, bufSize int, tocode, fromcode string) (*IconvWriteCloser, error) {
 	iconv, err := NewIconv(tocode, fromcode)
 	if err != nil {
@@ -120,10 +126,12 @@ func NewIconvWriteCloserBufferSize(w io.Writer, bufSize int, tocode, fromcode st
 	}, nil
 }
 
+// Close IconvWriteCloser.
 func (i *IconvWriteCloser) Close() error {
 	return i.iconv.Close()
 }
 
+// Write p to inner writer.
 func (i *IconvWriteCloser) Write(p []byte) (int, error) {
 	for index := 0; index < len(p); {
 		in, out := p[index:], i.outBuf[:]
@@ -148,6 +156,7 @@ func (i *IconvWriteCloser) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// Convert str from fromcode to tocode.
 func Conv(str, tocode, fromcode string) (string, error) {
 	from := bytes.NewBufferString(str)
 

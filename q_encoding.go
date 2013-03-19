@@ -1,8 +1,8 @@
 package encodingex
 
 import (
-	"io"
 	"fmt"
+	"io"
 )
 
 type qeDecodeStatus int
@@ -20,6 +20,7 @@ type qeDecoder struct {
 	temp   byte
 }
 
+// Create a Reader to decode q-encoding from r.
 func NewQEncodingDecoder(r io.Reader) io.Reader {
 	return &qeDecoder{
 		r:      r,

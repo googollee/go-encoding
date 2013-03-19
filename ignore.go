@@ -5,10 +5,11 @@ import (
 )
 
 type ignoreReader struct {
-	r io.Reader
+	r       io.Reader
 	byteMap map[byte]bool
 }
 
+// Create a Reader from r and ignore all ignoreBytes.
 func NewIgnoreReader(r io.Reader, ignoreBytes []byte) io.Reader {
 	byteMap := make(map[byte]bool)
 	for _, b := range ignoreBytes {
@@ -35,10 +36,11 @@ func (r *ignoreReader) Read(p []byte) (n int, err error) {
 }
 
 type ignoreWriter struct {
-	w io.Writer
+	w       io.Writer
 	byteMap map[byte]bool
 }
 
+// Create a Writer from w and ignore all ignoreBytes.
 func NewIgnoreWriter(w io.Writer, ignoreBytes []byte) io.Writer {
 	byteMap := make(map[byte]bool)
 	for _, b := range ignoreBytes {

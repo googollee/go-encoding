@@ -1,8 +1,8 @@
 package encodingex
 
 import (
-	"io"
 	"fmt"
+	"io"
 )
 
 func unHex(c byte) (byte, bool) {
@@ -49,6 +49,7 @@ type qpDecoder struct {
 	temp   byte
 }
 
+// Create a Reader to decode quoted-printable from r.
 func NewQuotedPrintableDecoder(r io.Reader) io.Reader {
 	return &qpDecoder{
 		r:      r,
@@ -130,7 +131,8 @@ type qpEncoder struct {
 	last          byte
 }
 
-func NewQuotedPrintableEncoder(w io.Writer, maxLength int) io.WriteCloser {
+// Create a Writer to encode quoted-printable to w. The maximum of one line is maxLength.
+func NewQuotedPrintableEncoder(w io.Writer, maxLength int) io.Writer {
 	if maxLength < 3 {
 		maxLength = 3
 	}
@@ -242,10 +244,6 @@ func (e *qpEncoder) Write(p []byte) (n int, err error) {
 	}
 	_, err = e.w.Write(e.buf[:e.nbuf])
 	return
-}
-
-func (e *qpEncoder) Close() error {
-	return nil
 }
 
 func (e *qpEncoder) pushCheck(p byte) error {

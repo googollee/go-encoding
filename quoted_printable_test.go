@@ -1,9 +1,9 @@
 package encodingex
 
 import (
-	"testing"
 	"bytes"
 	"io/ioutil"
+	"testing"
 )
 
 type unHexData struct {
