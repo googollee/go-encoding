@@ -1,4 +1,4 @@
-Some encoding implement for Go
+Some encoding implement in Go
 ==============================
 
 - Iconv reader/writer, and converter
@@ -7,4 +7,4 @@ Some encoding implement for Go
 - quoted-printable encoder/decoder
 - ignore reader/writer
 
-more detail, check: http://godoc.org/github.com/googollee/go-encoding-ex
+more detail, check: http://godoc.org/github.com/googollee/go-encoding

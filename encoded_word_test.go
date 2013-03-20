@@ -1,4 +1,4 @@
-package encodingex
+package encoding
 
 import (
 	"testing"

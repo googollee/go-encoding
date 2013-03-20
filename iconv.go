@@ -1,4 +1,4 @@
-package encodingex
+package encoding
 
 // #cgo freebsd LDFLAGS: -L/usr/local/lib -liconv
 // #cgo freebsd CFLAGS: -I/usr/local/include
